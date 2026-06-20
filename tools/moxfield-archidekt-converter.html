@@ -4,22 +4,116 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Moxfield → Archidekt — konwerter tagów</title>
-<link rel="stylesheet" href="/assets/styles.css">
+<style>
+  :root{
+    --bg:#13151a;
+    --panel:#1b1e25;
+    --panel-2:#20242c;
+    --border:#2b3038;
+    --text:#e7e9ee;
+    --text-dim:#8b919c;
+    --gold:#d8b25c;
+    --gold-dim:#3a3221;
+    --teal:#5fb3a6;
+    --teal-dim:#1d3733;
+    --red:#d8665a;
+    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
+  body{padding-bottom:60px;}
+  .pips{height:5px;display:flex;}
+  .pips span{flex:1;}
+  .pips .w{background:#e9e2c6;}
+  .pips .u{background:#3a6ea5;}
+  .pips .b{background:#3b3b40;}
+  .pips .r{background:#b3493a;}
+  .pips .g{background:#3f7a4f;}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 0;}
+  header h1{font-size:22px;margin:0 0 4px;letter-spacing:.2px;}
+  header p{margin:0 0 22px;color:var(--text-dim);font-size:14px;max-width:760px;}
+
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:0 0 10px;font-weight:600;}
+
+  .columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-bottom:18px;}
+  @media (max-width:880px){.columns{grid-template-columns:1fr;}}
+
+  textarea{
+    width:100%;height:380px;resize:vertical;background:var(--panel-2);color:var(--text);
+    border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);
+    font-size:12.5px;line-height:1.55;outline:none;
+  }
+  textarea:focus{border-color:var(--gold);}
+  textarea[readonly]{color:#cfd3da;}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;}
+  .row.between{justify-content:space-between;}
+
+  label.opt{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-dim);cursor:pointer;user-select:none;}
+  label.opt input{accent-color:var(--gold);}
+
+  select, .seg{
+    background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    border-radius:6px;font-size:12.5px;padding:6px 8px;font-family:var(--sans);
+  }
+
+  button{
+    border:none;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:600;
+    cursor:pointer;font-family:var(--sans);transition:opacity .15s ease;
+  }
+  button:active{opacity:.8;}
+  .btn-primary{background:var(--gold);color:#1a160a;}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
+  .btn-ghost:hover{border-color:var(--gold);}
+  .btn-sm{padding:6px 10px;font-size:12px;}
+
+  .stats{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 0;font-size:12.5px;color:var(--text-dim);}
+  .stats b{color:var(--text);font-weight:700;}
+
+  .warn{margin-top:10px;font-size:12.5px;color:var(--red);}
+  .warn ul{margin:4px 0 0;padding-left:18px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);}
+  th{color:var(--text-dim);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.05em;}
+  td.mono{font-family:var(--mono);}
+  td.center{text-align:center;}
+  .tbl-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:8px;}
+  .tbl-wrap table{margin:0;}
+  .tbl-wrap thead th{position:sticky;top:0;background:var(--panel);}
+
+  .chip{display:inline-block;background:var(--teal-dim);color:var(--teal);border-radius:999px;
+    padding:2px 8px;font-size:11px;margin:1px 3px 1px 0;white-space:nowrap;}
+  .chip.cmd{background:var(--gold-dim);color:var(--gold);}
+  .yes{color:var(--gold);font-weight:700;}
+  .dim{color:var(--text-dim);}
+
+  footer{max-width:1180px;margin:24px auto 0;padding:0 22px;color:var(--text-dim);font-size:12.5px;}
+  footer .panel{padding:16px;}
+  footer h3{font-size:13px;color:var(--text);margin:0 0 8px;}
+  footer ol,footer ul{margin:6px 0 10px;padding-left:20px;}
+  footer code{background:var(--panel-2);border:1px solid var(--border);padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11.5px;}
+
+  .copied{color:var(--teal);font-size:12px;margin-left:6px;}
+</style>
 </head>
 <body>
 
 <div class="pips"><span class="w"></span><span class="u"></span><span class="b"></span><span class="r"></span><span class="g"></span></div>
 
-<div class="wrap container">
+<div class="wrap">
   <header>
     <h1>Moxfield → Archidekt</h1>
-    <p>Wklej decklistę wyeksportowaną z Moxfielda (z tagami) — narzędzie zamieni ją na format importu Archidekta, przenosząc tagi jako kategorie <code>[Tag1,Tag2]</code>. Wszystko liczy się lokalnie w przeglądarce.</p>
+    <p>Wklej decklistę wyeksportowaną z Moxfielda (z tagami) — narzędzie zamieni ją na format importu Archidekta, przenosząc tagi jako kategorie <code>[Tag1,Tag2]</code>. Wszystko liczy się lokalnie w przeglądarce, nic nie jest wysyłane na żaden serwer.</p>
   </header>
 
   <div class="columns">
     <div class="panel">
       <h2>Wejście — lista z Moxfielda</h2>
-      <textarea id="input" placeholder="Wklej tutaj listę z Moxfielda, np:\n1 Sol Ring (cmm) 396 #!Ramp\n1 Atraxa, Praetors' Voice (cmm) 1 #Commander\n3 Brainstorm #Draw #Card Advantage"></textarea>
+      <textarea id="input" placeholder="Wklej tutaj listę z Moxfielda, np.:&#10;1 Sol Ring (cmm) 396 #!Ramp&#10;1 Atraxa, Praetors' Voice (cmm) 1 #Commander&#10;3 Brainstorm #Draw #Card Advantage"></textarea>
       <div class="row">
         <label class="opt">Format:
           <select id="formatSelect" style="margin-left:6px;">
@@ -68,19 +162,19 @@
   </div>
 </div>
 
-<footer class="container">
+<footer>
   <div class="panel">
     <h3>Jak tego użyć</h3>
     <ol>
-      <li>W Moxfieldzie otwórz talię → <b>Bulk Edit</b> (lub Export) i skopiuj listę z włączonymi tagami — linie wyglądają jak <code>1 Sol Ring (cmm) 396 #!Ramp</code>.</li>
+      <li>W Moxfieldzie otwórz talię → <b>Bulk Edit</b> (lub Export) i skopiuj listę z włączonymi tagami — linie wyglądają jak <code>1 Sol Ring (cmm) 396 #!Ramp</code>. Możesz też wkleić eksport CSV (kolekcja) z kolumnami <code>Count,Name,Edition,Foil,Tags,Collector Number</code>.</li>
       <li>Wklej to po lewej, kliknij <b>Konwertuj</b>, sprawdź podgląd kart poniżej.</li>
       <li>Skopiuj wynik (prawa strona) i wklej w Archidekt: <b>Import</b> → wklej tekst → Import.</li>
     </ol>
     <h3>Uwagi</h3>
     <ul>
       <li>Tagi lokalne (<code>#tag</code>) i globalne (<code>#!tag</code>) z Moxfielda są łączone w jedną listę kategorii Archidekta — Archidekt nie rozróżnia tych dwóch typów.</li>
-      <li><b>Foil</b> nie jest automatycznie zapisywany w tekście wyjściowym — karty oznaczone foilem są widoczne w podglądzie.</li>
-      <li>Sekcje <code>Sideboard</code> / <code>Maybeboard</code> z Moxfielda są wykrywane i widoczne w podglądzie, ale nie są automatycznie kodowane w eksporcie.</li>
+      <li><b>Foil</b> nie jest automatycznie zapisywany w tekście wyjściowym (nie ma w 100% potwierdzonej, stabilnej składni tekstowej Archidekta na foil) — karty oznaczone foilem są widoczne w podglądzie (kolumna „Foil”), żeby łatwo poprawić je ręcznie po imporcie.</li>
+      <li>Sekcje <code>Sideboard</code> / <code>Maybeboard</code> z Moxfielda są wykrywane i widoczne w podglądzie, ale nie są automatycznie kodowane w eksporcie — Archidekt rozdziela je składnią z apostrofami odwrotnymi, np. <code>1x Karta `Sideboard`</code>, więc dopisz to ręcznie przy kartach, które mają tam wylądować.</li>
       <li>Wszystko działa offline, w samej przeglądarce — można zapisać ten plik i otwierać lokalnie.</li>
     </ul>
   </div>
@@ -151,6 +245,8 @@
   }
 
   function normalizeDFCName(name){
+    // Moxfield zapisuje karty dwustronne/split z jednym "/", Archidekt wymaga "//".
+    // Lookbehind/lookahead pilnują, żeby nie dotykać już poprawnego "//".
     return name.replace(/\s*(?<!\/)\/(?!\/)\s*/g, ' // ').replace(/\s{2,}/g, ' ').trim();
   }
 
@@ -340,7 +436,7 @@
   }
 
   function escapeHtml(s){
-    return String(s).replace(/[&<>\"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[ch]));
+    return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   }
 
   document.getElementById('convertBtn').addEventListener('click', render);
@@ -355,7 +451,20 @@
   });
 
   document.getElementById('loadExample').addEventListener('click', () => {
-    inputEl.value = `Commander\n1 Atraxa, Praetors' Voice (cmm) 1 #Commander\n\nDeck\n1 Sol Ring (cmm) 396 #!Ramp #Utility\n1 Arcane Signet (cmm) 384 #!Ramp\n1 Lightning Bolt (lea) *F* 161 #Removal\n3 Brainstorm #Draw #Card Advantage\n1 Cyclonic Rift (rna) 200 *F* #Removal #Wincon\n10 Forest #Lands\n\nMaybeboard\n1 Beast Within #Removal`;
+    inputEl.value =
+`Commander
+1 Atraxa, Praetors' Voice (cmm) 1 #Commander
+
+Deck
+1 Sol Ring (cmm) 396 #!Ramp #Utility
+1 Arcane Signet (cmm) 384 #!Ramp
+1 Lightning Bolt (lea) *F* 161 #Removal
+3 Brainstorm #Draw #Card Advantage
+1 Cyclonic Rift (rna) 200 *F* #Removal #Wincon
+10 Forest #Lands
+
+Maybeboard
+1 Beast Within #Removal`;
     render();
   });
 

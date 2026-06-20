@@ -1,0 +1,83 @@
+/* Cobalt-like dark theme inspired stylesheet for Toolbox
+   Includes layout and component styles used by the Moxfield → Archidekt tool
+*/
+:root{
+  --bg:#071327; /* deep cobalt */
+  --panel:#0c1a33;
+  --panel-2:#0f2540;
+  --border:#17314c;
+  --text:#e6f0ff;
+  --text-dim:#9fb4d6;
+  --accent:#48c0ff; /* bright cyan */
+  --accent-dim:#11323f;
+  --muted:#a4b9d3;
+  --success:#6fe3c1;
+  --danger:#ff7b7b;
+  --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:var(--sans);background:linear-gradient(180deg,var(--bg) 0%, #021324 100%);color:var(--text);}
+.container{max-width:1180px;margin:0 auto;padding:28px 22px}
+.site-header{border-bottom:1px solid rgba(255,255,255,0.03);padding:20px 0}
+.header-inner,.foot-inner{display:flex;align-items:center;justify-content:space-between}
+.logo{font-weight:700;font-size:20px;letter-spacing:0.4px;margin:0}
+.main-nav a{color:var(--text-dim);text-decoration:none;margin-left:14px;padding:8px 10px;border-radius:8px}
+.main-nav a.active{background:rgba(72,192,255,0.08);color:var(--accent)}
+.hero{background:linear-gradient(90deg, rgba(72,192,255,0.04), transparent);padding:26px;border-radius:12px;border:1px solid var(--border);margin-bottom:18px}
+.hero h2{margin:0 0 6px;font-size:18px}
+.hero p{margin:0 0 12px;color:var(--text-dim)}
+.note{color:var(--muted);font-size:13px}
+.btn-primary{display:inline-block;background:var(--accent);color:#002033;padding:10px 14px;border-radius:8px;text-decoration:none;font-weight:700}
+.about-panel{background:var(--panel);border:1px solid var(--border);padding:14px;border-radius:10px}
+.site-footer{padding:18px 0;color:var(--text-dim)}
+
+/* Tool-specific styles (copied from original tool and adapted) */
+.pips{height:5px;display:flex;margin-bottom:10px;border-radius:6px;overflow:hidden}
+.pips span{flex:1}
+.pips .w{background:#fef5d6}
+.pips .u{background:#3a6ea5}
+.pips .b{background:#3b3b40}
+.pips .r{background:#b3493a}
+.pips .g{background:#3f7a4f}
+.wrap{max-width:1180px;margin:0 auto;padding:0 22px}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:0 0 10px;font-weight:600}
+.columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-bottom:18px}
+@media (max-width:880px){.columns{grid-template-columns:1fr}}
+textarea{width:100%;height:380px;resize:vertical;background:var(--panel-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);font-size:13px;line-height:1.55;outline:none}
+textarea:focus{box-shadow:0 0 0 3px rgba(72,192,255,0.06);border-color:var(--accent)}
+textarea[readonly]{color:#cfd8e5}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.row.between{justify-content:space-between}
+label.opt{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-dim);cursor:pointer}
+label.opt input{accent-color:var(--accent)}
+select,.seg{background:var(--panel-2);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:13px;padding:6px 8px}
+button{border:none;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);transition:opacity .15s ease}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent)}
+.btn-sm{padding:6px 10px;font-size:12px}
+.btn-primary{background:var(--accent);color:#002033;border:none}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 0;font-size:13px;color:var(--text-dim)}
+.stats b{color:var(--text);font-weight:700}
+.warn{margin-top:10px;font-size:13px;color:var(--danger)}
+.warn ul{margin:4px 0 0;padding-left:18px}
+.table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border)}
+th{color:var(--text-dim);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.05em}
+.td.mono,td.mono{font-family:var(--mono)}
+.td.center,td.center{text-align:center}
+.tbl-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:8px}
+.tbl-wrap thead th{position:sticky;top:0;background:var(--panel)}
+.chip{display:inline-block;background:rgba(111,227,193,0.06);color:var(--success);border-radius:999px;padding:2px 8px;font-size:11px;margin:1px 3px 1px 0;white-space:nowrap}
+.chip.cmd{background:rgba(216,178,92,0.06);color:#d8b25c}
+.yes{color:var(--accent);font-weight:700}
+.dim{color:var(--text-dim)}
+
+/* small helpers */
+.center{text-align:center}
+.mono{font-family:var(--mono)}
+.copied{color:var(--success);font-size:12px;margin-left:6px}
+
+/* Make links accessible */
+a{color:var(--accent)}

@@ -1,119 +1,42 @@
 <!doctype html>
-<html lang="en">
+<html lang="pl">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Toolbox — Useful web utilities</title>
-  <meta name="description" content="A curated collection of small, useful web tools: formatters, converters, testers and more.">
+  <title>Toolbox — Moxfield → Archidekt</title>
+  <meta name="description" content="Moxfield to Archidekt tag converter — single focused tool." />
   <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
   <header class="site-header">
-    <div class="container header-inner">
+    <div class="container">
       <h1 class="logo">Toolbox</h1>
       <nav class="main-nav" aria-label="Primary">
-        <a href="#features">Features</a>
-        <a href="#tools">Tools</a>
-        <a href="#about">About</a>
+        <a href="/tools/moxfield-archidekt-converter.html" class="active">Moxfield → Archidekt</a>
       </nav>
     </div>
   </header>
 
-  <main>
+  <main class="container">
     <section class="hero">
-      <div class="container">
-        <h2 class="hero-title">Small utilities. Big help.</h2>
-        <p class="hero-sub">Fast, focused tools for developers, designers, and curious people — no install required.</p>
-
-        <div class="search">
-          <label for="tool-search" class="sr-only">Search tools</label>
-          <input id="tool-search" type="search" placeholder="Search tools (e.g. json, regex, color)" aria-label="Search tools">
-        </div>
-      </div>
+      <h2>Konwerter tagów: Moxfield → Archidekt</h2>
+      <p>Wklej listę z Moxfielda (z tagami) — narzędzie przekształci ją na format importu Archidekta, przenosząc tagi jako kategorie.</p>
+      <p class="note">Ta strona zawiera tylko pierwsze narzędzie — reszta listy narzędzi została usunięta z głównej strony, aby skupić się na tym konwerterze.</p>
+      <p><a class="btn-primary" href="/tools/moxfield-archidekt-converter.html">Otwórz konwerter</a></p>
     </section>
 
-    <section id="tools" class="container tools-section">
-      <h3 class="section-title">Popular tools</h3>
-      <div id="tools-grid" class="tools-grid">
-        <article class="tool-card" data-keywords="color picker design hex rgba">
-          <h4><a href="/tools/color-picker.html">Color Picker</a></h4>
-          <p>Pick colors, see hex/rgba/hsl values and copy to clipboard.</p>
-        </article>
-
-        <article class="tool-card" data-keywords="regex tester regex test expression">
-          <h4><a href="/tools/regex-tester.html">Regex Tester</a></h4>
-          <p>Interactive regular expression tester with highlighting and flags.</p>
-        </article>
-
-        <article class="tool-card" data-keywords="json formatter lint pretty print">
-          <h4><a href="/tools/json-formatter.html">JSON Formatter</a></h4>
-          <p>Paste JSON and get a pretty, validated, copyable output.</p>
-        </article>
-
-        <article class="tool-card" data-keywords="converter unit length weight temperature">
-          <h4><a href="/tools/unit-converter.html">Unit Converter</a></h4>
-          <p>Convert common units: length, weight, temperature and more.</p>
-        </article>
-
-        <article class="tool-card" data-keywords="password generator secure random">
-          <h4><a href="/tools/password-generator.html">Password Generator</a></h4>
-          <p>Create secure passwords with options for length and character sets.</p>
-        </article>
-
-        <article class="tool-card" data-keywords="image compressor optimize jpeg png webp">
-          <h4><a href="/tools/image-compressor.html">Image Compressor</a></h4>
-          <p>Quickly reduce image file sizes for the web.</p>
-        </article>
-
-      </div>
-
-      <p class="more-tools">Want more? Browse the full <a href="/tools/">tools index</a>.</p>
-    </section>
-
-    <section id="features" class="container features">
-      <h3 class="section-title">Why Toolbox</h3>
-      <ul>
-        <li>Fast and focused: each tool does one thing well.</li>
-        <li>Privacy-minded: tools run in your browser when possible.</li>
-        <li>Open and extensible: add your own tools or suggest improvements.</li>
-      </ul>
-    </section>
-
-    <section id="about" class="container about">
-      <h3 class="section-title">About</h3>
-      <p>This is a simple, static site meant to provide handy utilities. If you'd like to contribute or suggest a tool, open an issue on the <a href="https://github.com/wcinamkabel/.github.io">GitHub repository</a>.</p>
+    <section class="about-panel">
+      <h3>O stronie</h3>
+      <p>Minimalna, ciemna skórka inspirowana cobalt.tools — narzędzia działają po stronie klienta i można je zapisywać lokalnie.</p>
     </section>
   </main>
 
   <footer class="site-footer">
-    <div class="container footer-inner">
-      <p>© <span id="year"></span> Toolbox — <a href="https://github.com/wcinamkabel/.github.io">Source</a></p>
+    <div class="container foot-inner">
+      <p>© <span id="year"></span> Toolbox — <a href="https://github.com/wcinamkabel/.github.io">Repozytorium</a></p>
     </div>
   </footer>
 
-  <script>
-    // Set current year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // Simple client-side search/filter for tool cards
-    (function(){
-      const input = document.getElementById('tool-search');
-      const cards = Array.from(document.querySelectorAll('.tool-card'));
-
-      function normalize(s){ return (s || '').toLowerCase(); }
-
-      input.addEventListener('input', function(){
-        const q = normalize(this.value).trim();
-        if(!q){
-          cards.forEach(c => c.style.display = 'block');
-          return;
-        }
-        cards.forEach(c => {
-          const keywords = normalize(c.dataset.keywords + ' ' + c.textContent);
-          c.style.display = keywords.includes(q) ? 'block' : 'none';
-        });
-      });
-    })();
-  </script>
+  <script>document.getElementById('year').textContent = new Date().getFullYear();</script>
 </body>
 </html>

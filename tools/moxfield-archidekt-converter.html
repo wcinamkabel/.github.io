@@ -1,512 +1,11 @@
-<<<<<<< HEAD
+﻿
 <!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Moxfield → Archidekt — konwerter tagów</title>
-<style>
-  :root{
-    --bg:#13151a;
-    --panel:#1b1e25;
-    --panel-2:#20242c;
-    --border:#2b3038;
-    --text:#e7e9ee;
-    --text-dim:#8b919c;
-    --gold:#d8b25c;
-    --gold-dim:#3a3221;
-    --teal:#5fb3a6;
-    --teal-dim:#1d3733;
-    --red:#d8665a;
-    --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
-    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);}
-  body{padding-bottom:60px;}
-  .pips{height:5px;display:flex;}
-  .pips span{flex:1;}
-  .pips .w{background:#e9e2c6;}
-  .pips .u{background:#3a6ea5;}
-  .pips .b{background:#3b3b40;}
-  .pips .r{background:#b3493a;}
-  .pips .g{background:#3f7a4f;}
-
-  .wrap{max-width:1180px;margin:0 auto;padding:28px 22px 0;}
-  header h1{font-size:22px;margin:0 0 4px;letter-spacing:.2px;}
-  header p{margin:0 0 22px;color:var(--text-dim);font-size:14px;max-width:760px;}
-
-  .panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;}
-  .panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);margin:0 0 10px;font-weight:600;}
-
-  .columns{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start;margin-bottom:18px;}
-  @media (max-width:880px){.columns{grid-template-columns:1fr;}}
-
-  textarea{
-    width:100%;height:380px;resize:vertical;background:var(--panel-2);color:var(--text);
-    border:1px solid var(--border);border-radius:8px;padding:12px;font-family:var(--mono);
-    font-size:12.5px;line-height:1.55;outline:none;
-  }
-  textarea:focus{border-color:var(--gold);}
-  textarea[readonly]{color:#cfd3da;}
-
-  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px;}
-  .row.between{justify-content:space-between;}
-
-  label.opt{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-dim);cursor:pointer;user-select:none;}
-  label.opt input{accent-color:var(--gold);}
-
-  select, .seg{
-    background:var(--panel-2);border:1px solid var(--border);color:var(--text);
-    border-radius:6px;font-size:12.5px;padding:6px 8px;font-family:var(--sans);
-  }
-
-  button{
-    border:none;border-radius:7px;padding:9px 14px;font-size:13px;font-weight:600;
-    cursor:pointer;font-family:var(--sans);transition:opacity .15s ease;
-  }
-  button:active{opacity:.8;}
-  .btn-primary{background:var(--gold);color:#1a160a;}
-  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
-  .btn-ghost:hover{border-color:var(--gold);}
-  .btn-sm{padding:6px 10px;font-size:12px;}
-
-  .stats{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 0;font-size:12.5px;color:var(--text-dim);}
-  .stats b{color:var(--text);font-weight:700;}
-
-  .warn{margin-top:10px;font-size:12.5px;color:var(--red);}
-  .warn ul{margin:4px 0 0;padding-left:18px;}
-
-  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
-  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);}
-  th{color:var(--text-dim);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.05em;}
-  td.mono{font-family:var(--mono);}
-  td.center{text-align:center;}
-  .tbl-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:8px;}
-  .tbl-wrap table{margin:0;}
-  .tbl-wrap thead th{position:sticky;top:0;background:var(--panel);}
-
-  .chip{display:inline-block;background:var(--teal-dim);color:var(--teal);border-radius:999px;
-    padding:2px 8px;font-size:11px;margin:1px 3px 1px 0;white-space:nowrap;}
-  .chip.cmd{background:var(--gold-dim);color:var(--gold);}
-  .yes{color:var(--gold);font-weight:700;}
-  .dim{color:var(--text-dim);}
-
-  footer{max-width:1180px;margin:24px auto 0;padding:0 22px;color:var(--text-dim);font-size:12.5px;}
-  footer .panel{padding:16px;}
-  footer h3{font-size:13px;color:var(--text);margin:0 0 8px;}
-  footer ol,footer ul{margin:6px 0 10px;padding-left:20px;}
-  footer code{background:var(--panel-2);border:1px solid var(--border);padding:1px 5px;border-radius:4px;font-family:var(--mono);font-size:11.5px;}
-
-  .copied{color:var(--teal);font-size:12px;margin-left:6px;}
-</style>
-</head>
-<body>
-
-<div class="pips"><span class="w"></span><span class="u"></span><span class="b"></span><span class="r"></span><span class="g"></span></div>
-
-<div class="wrap">
-  <header>
-    <h1>Moxfield → Archidekt</h1>
-    <p>Wklej decklistę wyeksportowaną z Moxfielda (z tagami) — narzędzie zamieni ją na format importu Archidekta, przenosząc tagi jako kategorie <code>[Tag1,Tag2]</code>. Wszystko liczy się lokalnie w przeglądarce, nic nie jest wysyłane na żaden serwer.</p>
-  </header>
-
-  <div class="columns">
-    <div class="panel">
-      <h2>Wejście — lista z Moxfielda</h2>
-      <textarea id="input" placeholder="Wklej tutaj listę z Moxfielda, np.:&#10;1 Sol Ring (cmm) 396 #!Ramp&#10;1 Atraxa, Praetors' Voice (cmm) 1 #Commander&#10;3 Brainstorm #Draw #Card Advantage"></textarea>
-      <div class="row">
-        <label class="opt">Format:
-          <select id="formatSelect" style="margin-left:6px;">
-            <option value="auto" selected>auto-wykrywanie</option>
-            <option value="text">tekst (bulk/eksport tekstowy)</option>
-            <option value="csv">CSV</option>
-          </select>
-        </label>
-        <button class="btn-ghost btn-sm" id="loadExample" type="button">Wstaw przykład</button>
-        <button class="btn-ghost btn-sm" id="clearAll" type="button">Wyczyść</button>
-      </div>
-      <div class="row">
-        <label class="opt"><input type="checkbox" id="optSetCollector" checked> dołącz set i numer kolekcjonerski</label>
-        <label class="opt"><input type="checkbox" id="optCommanderTag" checked> dodaj kategorię <code>[Commander]</code> dla commandera</label>
-      </div>
-      <div class="row">
-        <button class="btn-primary" id="convertBtn" type="button">Konwertuj →</button>
-      </div>
-    </div>
-
-    <div class="panel">
-      <h2>Wyjście — do wklejenia w Archidekt</h2>
-      <textarea id="output" readonly placeholder="Tu pojawi się lista gotowa do importu w Archidekt…"></textarea>
-      <div class="row between">
-        <div>
-          <button class="btn-ghost btn-sm" id="copyBtn" type="button">Skopiuj</button>
-          <button class="btn-ghost btn-sm" id="downloadBtn" type="button">Pobierz .txt</button>
-          <span class="copied" id="copiedMsg" style="display:none;">Skopiowano ✓</span>
-        </div>
-      </div>
-      <div class="stats" id="stats"></div>
-      <div class="warn" id="warnBox" style="display:none;"></div>
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Podgląd rozpoznanych kart</h2>
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>Ilość</th><th>Karta</th><th>Set</th><th>Nr</th><th>Foil</th><th>Sekcja</th><th>Tagi → kategorie</th></tr>
-        </thead>
-        <tbody id="previewBody"><tr><td colspan="7" class="dim">Brak danych — wklej listę i kliknij „Konwertuj”.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <div class="panel">
-    <h3>Jak tego użyć</h3>
-    <ol>
-      <li>W Moxfieldzie otwórz talię → <b>Bulk Edit</b> (lub Export) i skopiuj listę z włączonymi tagami — linie wyglądają jak <code>1 Sol Ring (cmm) 396 #!Ramp</code>. Możesz też wkleić eksport CSV (kolekcja) z kolumnami <code>Count,Name,Edition,Foil,Tags,Collector Number</code>.</li>
-      <li>Wklej to po lewej, kliknij <b>Konwertuj</b>, sprawdź podgląd kart poniżej.</li>
-      <li>Skopiuj wynik (prawa strona) i wklej w Archidekt: <b>Import</b> → wklej tekst → Import.</li>
-    </ol>
-    <h3>Uwagi</h3>
-    <ul>
-      <li>Tagi lokalne (<code>#tag</code>) i globalne (<code>#!tag</code>) z Moxfielda są łączone w jedną listę kategorii Archidekta — Archidekt nie rozróżnia tych dwóch typów.</li>
-      <li><b>Foil</b> nie jest automatycznie zapisywany w tekście wyjściowym (nie ma w 100% potwierdzonej, stabilnej składni tekstowej Archidekta na foil) — karty oznaczone foilem są widoczne w podglądzie (kolumna „Foil”), żeby łatwo poprawić je ręcznie po imporcie.</li>
-      <li>Sekcje <code>Sideboard</code> / <code>Maybeboard</code> z Moxfielda są wykrywane i widoczne w podglądzie, ale nie są automatycznie kodowane w eksporcie — Archidekt rozdziela je składnią z apostrofami odwrotnymi, np. <code>1x Karta `Sideboard`</code>, więc dopisz to ręcznie przy kartach, które mają tam wylądować.</li>
-      <li>Wszystko działa offline, w samej przeglądarce — można zapisać ten plik i otwierać lokalnie.</li>
-    </ul>
-  </div>
-</footer>
-
-<script>
-(function(){
-  const inputEl = document.getElementById('input');
-  const outputEl = document.getElementById('output');
-  const formatSelect = document.getElementById('formatSelect');
-  const optSetCollector = document.getElementById('optSetCollector');
-  const optCommanderTag = document.getElementById('optCommanderTag');
-  const statsEl = document.getElementById('stats');
-  const warnBox = document.getElementById('warnBox');
-  const previewBody = document.getElementById('previewBody');
-  const copiedMsg = document.getElementById('copiedMsg');
-
-  const HEADER_KEYWORDS = {
-    'commander':'commander',
-    'companion':'companion',
-    'signature spell':'signature',
-    'signature spells':'signature',
-    'mainboard':'deck',
-    'main board':'deck',
-    'main':'deck',
-    'deck':'deck',
-    'sideboard':'sideboard',
-    'maybeboard':'maybeboard',
-    'considering':'maybeboard',
-    'tokens':'tokens',
-    'outside the 99':'commander'
-  };
-
-  function parseCSVLine(line){
-    const out = [];
-    let cur = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++){
-      const ch = line[i];
-      if (inQuotes){
-        if (ch === '"'){
-          if (line[i+1] === '"'){ cur += '"'; i++; }
-          else { inQuotes = false; }
-        } else cur += ch;
-      } else {
-        if (ch === '"') inQuotes = true;
-        else if (ch === ','){ out.push(cur); cur = ''; }
-        else cur += ch;
-      }
-    }
-    out.push(cur);
-    return out;
-  }
-
-  function extractTags(rest){
-    const hashIndex = rest.indexOf('#');
-    if (hashIndex === -1) return { cleaned: rest, tags: [] };
-    const cardArea = rest.slice(0, hashIndex);
-    const tagArea = rest.slice(hashIndex);
-    const tags = [];
-    const re = /#(!)?\s*([^#]+)/g;
-    let m;
-    while ((m = re.exec(tagArea)) !== null){
-      const name = m[2].trim();
-      if (name) tags.push({ name, global: !!m[1] });
-    }
-    return { cleaned: cardArea, tags };
-  }
-
-  function normalizeDFCName(name){
-    // Moxfield zapisuje karty dwustronne/split z jednym "/", Archidekt wymaga "//".
-    // Lookbehind/lookahead pilnują, żeby nie dotykać już poprawnego "//".
-    return name.replace(/\s*(?<!\/)\/(?!\/)\s*/g, ' // ').replace(/\s{2,}/g, ' ').trim();
-  }
-
-  function parseTextBlock(raw){
-    const lines = raw.split(/\r?\n/);
-    const cards = [];
-    const warnings = [];
-    let section = 'deck';
-
-    for (let rawLine of lines){
-      const line = rawLine.trim();
-      if (!line) continue;
-
-      const qtyMatch = line.match(/^(\d+)\s*x?\s+(.*)$/i);
-      if (!qtyMatch){
-        const headerKey = line.replace(/\(.*?\)/g,'').replace(/:$/,'').trim().toLowerCase();
-        if (HEADER_KEYWORDS.hasOwnProperty(headerKey)){
-          section = HEADER_KEYWORDS[headerKey];
-        } else {
-          warnings.push(line);
-        }
-        continue;
-      }
-
-      const qty = parseInt(qtyMatch[1], 10) || 1;
-      const rest = qtyMatch[2];
-      const { cleaned, tags } = extractTags(rest);
-
-      let cardPart = cleaned.trim();
-      let foil = false, alter = false;
-      cardPart = cardPart.replace(/\*F\*/ig, () => { foil = true; return ''; });
-      cardPart = cardPart.replace(/\*A\*/ig, () => { alter = true; return ''; });
-      cardPart = cardPart.replace(/\s{2,}/g, ' ').trim();
-
-      let set = null, collector = null, name = cardPart;
-      const setMatch = cardPart.match(/\(([A-Za-z0-9]{2,6})\)/);
-      if (setMatch){
-        set = setMatch[1].toLowerCase();
-        name = cardPart.slice(0, setMatch.index).trim();
-        const after = cardPart.slice(setMatch.index + setMatch[0].length).trim();
-        if (after){
-          const collMatch = after.match(/^([A-Za-z0-9★]+)/);
-          if (collMatch) collector = collMatch[1];
-        }
-      }
-
-      name = normalizeDFCName(name);
-      if (!name) continue;
-      cards.push({ qty, name, set, collector, foil, alter, tags, section });
-    }
-    return { cards, warnings };
-  }
-
-  function parseCSVBlock(raw){
-    let lines = raw.split(/\r?\n/).filter(l => l.trim().length > 0);
-    const cards = [];
-    const warnings = [];
-    if (!lines.length) return { cards, warnings };
-
-    if (lines[0].charCodeAt(0) === 0xFEFF) lines[0] = lines[0].slice(1);
-    const header = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
-    const idx = (...names) => {
-      for (const n of names){ const i = header.indexOf(n); if (i !== -1) return i; }
-      return -1;
-    };
-    const countIdx = idx('count','quantity','qty','amount');
-    const nameIdx = idx('name','card','card name');
-    const editionIdx = idx('edition','set');
-    const foilIdx = idx('foil');
-    const tagsIdx = idx('tags');
-    const collectorIdx = idx('collector number','collector_number');
-
-    if (nameIdx === -1){
-      warnings.push('Nie znaleziono kolumny "Name" w CSV — sprawdź nagłówek pliku.');
-      return { cards, warnings };
-    }
-
-    for (let i = 1; i < lines.length; i++){
-      const fields = parseCSVLine(lines[i]);
-      const name = normalizeDFCName((fields[nameIdx] || '').trim());
-      if (!name) continue;
-      const qty = countIdx !== -1 ? (parseInt(fields[countIdx], 10) || 1) : 1;
-      const set = editionIdx !== -1 && fields[editionIdx] ? fields[editionIdx].trim().toLowerCase() : null;
-      const collector = collectorIdx !== -1 && fields[collectorIdx] ? fields[collectorIdx].trim() : null;
-      const foilRaw = foilIdx !== -1 ? (fields[foilIdx] || '') : '';
-      const foil = /foil/i.test(foilRaw);
-      const tagsRaw = tagsIdx !== -1 ? (fields[tagsIdx] || '') : '';
-      const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean).map(t => ({ name: t, global: false }));
-      cards.push({ qty, name, set, collector, foil, alter: false, tags, section: 'deck' });
-    }
-    return { cards, warnings };
-  }
-
-  function looksLikeCSV(raw){
-    const firstLine = raw.split(/\r?\n/).find(l => l.trim().length > 0) || '';
-    const fields = parseCSVLine(firstLine).map(f => f.trim().toLowerCase());
-    return fields.includes('name') && (fields.includes('count') || fields.includes('quantity') || fields.includes('tags'));
-  }
-
-  function sanitizeCategory(name){
-    return name.replace(/[\[\]]/g, '').replace(/,/g, ';').trim();
-  }
-
-  function dedupe(list){
-    const seen = new Set();
-    const out = [];
-    for (const item of list){
-      const key = item.toLowerCase();
-      if (!seen.has(key)){ seen.add(key); out.push(item); }
-    }
-    return out;
-  }
-
-  function buildOutputLine(card, opts){
-    let line = card.qty + 'x ' + card.name;
-    if (opts.includeSetCollector && card.set){
-      line += ' (' + card.set + ')';
-      if (card.collector) line += ' ' + card.collector;
-    }
-    let catNames = card.tags.map(t => sanitizeCategory(t.name)).filter(Boolean);
-    if (opts.commanderTag && card.section === 'commander'){
-      catNames.push('Commander');
-    }
-    catNames = dedupe(catNames);
-    if (catNames.length){
-      line += ' [' + catNames.join(',') + ']';
-    }
-    return line;
-  }
-
-  function render(){
-    const raw = inputEl.value;
-    if (!raw.trim()){
-      outputEl.value = '';
-      statsEl.innerHTML = '';
-      warnBox.style.display = 'none';
-      previewBody.innerHTML = '<tr><td colspan="7" class="dim">Brak danych — wklej listę i kliknij „Konwertuj”.</td></tr>';
-      return;
-    }
-
-    const fmt = formatSelect.value;
-    const useCSV = fmt === 'csv' || (fmt === 'auto' && looksLikeCSV(raw));
-    const { cards, warnings } = useCSV ? parseCSVBlock(raw) : parseTextBlock(raw);
-
-    const opts = {
-      includeSetCollector: optSetCollector.checked,
-      commanderTag: optCommanderTag.checked
-    };
-
-    const outLines = cards.map(c => buildOutputLine(c, opts));
-    outputEl.value = outLines.join('\n');
-
-    const totalCards = cards.reduce((s, c) => s + c.qty, 0);
-    const allTags = dedupe(cards.flatMap(c => c.tags.map(t => sanitizeCategory(t.name))).filter(Boolean));
-    statsEl.innerHTML =
-      'Rozpoznane wpisy: <b>' + cards.length + '</b> &nbsp;·&nbsp; ' +
-      'Suma kart: <b>' + totalCards + '</b> &nbsp;·&nbsp; ' +
-      'Unikalne tagi: <b>' + allTags.length + '</b>' +
-      (warnings.length ? ' &nbsp;·&nbsp; Pominięte linie: <b>' + warnings.length + '</b>' : '');
-
-    if (warnings.length){
-      warnBox.style.display = 'block';
-      warnBox.innerHTML = 'Pominięto ' + warnings.length + ' linii (nagłówki lub nierozpoznany format):<ul>' +
-        warnings.slice(0, 8).map(w => '<li>' + escapeHtml(w) + '</li>').join('') +
-        (warnings.length > 8 ? '<li>…</li>' : '') + '</ul>';
-    } else {
-      warnBox.style.display = 'none';
-    }
-
-    if (!cards.length){
-      previewBody.innerHTML = '<tr><td colspan="7" class="dim">Nie rozpoznano żadnych kart. Sprawdź format wejściowy.</td></tr>';
-    } else {
-      previewBody.innerHTML = cards.map(c => {
-        const tagChips = c.tags.map(t => '<span class="chip">' + escapeHtml(sanitizeCategory(t.name)) + '</span>').join('');
-        const cmdChip = (opts.commanderTag && c.section === 'commander') ? '<span class="chip cmd">Commander</span>' : '';
-        return '<tr>' +
-          '<td class="mono center">' + c.qty + '</td>' +
-          '<td>' + escapeHtml(c.name) + '</td>' +
-          '<td class="mono">' + (c.set ? c.set : '<span class="dim">—</span>') + '</td>' +
-          '<td class="mono">' + (c.collector ? c.collector : '<span class="dim">—</span>') + '</td>' +
-          '<td class="center">' + (c.foil ? '<span class="yes">✓</span>' : '<span class="dim">—</span>') + '</td>' +
-          '<td class="dim">' + c.section + '</td>' +
-          '<td>' + (tagChips || cmdChip ? (tagChips + cmdChip) : '<span class="dim">—</span>') + '</td>' +
-          '</tr>';
-      }).join('');
-    }
-  }
-
-  function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
-  }
-
-  document.getElementById('convertBtn').addEventListener('click', render);
-  inputEl.addEventListener('input', () => { clearTimeout(window.__debounce); window.__debounce = setTimeout(render, 350); });
-  optSetCollector.addEventListener('change', render);
-  optCommanderTag.addEventListener('change', render);
-  formatSelect.addEventListener('change', render);
-
-  document.getElementById('clearAll').addEventListener('click', () => {
-    inputEl.value = '';
-    render();
-  });
-
-  document.getElementById('loadExample').addEventListener('click', () => {
-    inputEl.value =
-`Commander
-1 Atraxa, Praetors' Voice (cmm) 1 #Commander
-
-Deck
-1 Sol Ring (cmm) 396 #!Ramp #Utility
-1 Arcane Signet (cmm) 384 #!Ramp
-1 Lightning Bolt (lea) *F* 161 #Removal
-3 Brainstorm #Draw #Card Advantage
-1 Cyclonic Rift (rna) 200 *F* #Removal #Wincon
-10 Forest #Lands
-
-Maybeboard
-1 Beast Within #Removal`;
-    render();
-  });
-
-  document.getElementById('copyBtn').addEventListener('click', async () => {
-    if (!outputEl.value) return;
-    try {
-      await navigator.clipboard.writeText(outputEl.value);
-    } catch (e) {
-      outputEl.select();
-      document.execCommand('copy');
-    }
-    copiedMsg.style.display = 'inline';
-    setTimeout(() => { copiedMsg.style.display = 'none'; }, 1500);
-  });
-
-  document.getElementById('downloadBtn').addEventListener('click', () => {
-    if (!outputEl.value) return;
-    const blob = new Blob([outputEl.value], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'archidekt-import.txt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  });
-
-  render();
-})();
-</script>
-</body>
-</html>
-=======
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Moxfield → Archidekt — konwerter tagów</title>
-<link rel="stylesheet" href="/assets/styles.css">
+<title>Moxfield â†’ Archidekt â€” konwerter tagĂłw</title>
+<link rel="stylesheet" href="../assets/styles.css">
 </head>
 <body>
 
@@ -514,14 +13,14 @@ Maybeboard
 
 <div class="wrap container">
   <header>
-    <h1>Moxfield → Archidekt</h1>
-    <p>Wklej decklistę wyeksportowaną z Moxfielda (z tagami) — narzędzie zamieni ją na format importu Archidekta, przenosząc tagi jako kategorie <code>[Tag1,Tag2]</code>. Wszystko liczy się lokalnie w przeglądarce.</p>
+    <h1>Moxfield â†’ Archidekt</h1>
+    <p>Wklej decklistÄ™ wyeksportowanÄ… z Moxfielda (z tagami) â€” narzÄ™dzie zamieni jÄ… na format importu Archidekta, przenoszÄ…c tagi jako kategorie <code>[Tag1,Tag2]</code>. Wszystko liczy siÄ™ lokalnie w przeglÄ…darce.</p>
   </header>
 
   <div class="columns">
     <div class="panel">
-      <h2>Wejście — lista z Moxfielda</h2>
-      <textarea id="input" placeholder="Wklej tutaj listę z Moxfielda, np:\n1 Sol Ring (cmm) 396 #!Ramp\n1 Atraxa, Praetors' Voice (cmm) 1 #Commander\n3 Brainstorm #Draw #Card Advantage"></textarea>
+      <h2>WejĹ›cie â€” lista z Moxfielda</h2>
+      <textarea id="input" placeholder="Wklej tutaj listÄ™ z Moxfielda, np:\n1 Sol Ring (cmm) 396 #!Ramp\n1 Atraxa, Praetors' Voice (cmm) 1 #Commander\n3 Brainstorm #Draw #Card Advantage"></textarea>
       <div class="row">
         <label class="opt">Format:
           <select id="formatSelect" style="margin-left:6px;">
@@ -530,26 +29,26 @@ Maybeboard
             <option value="csv">CSV</option>
           </select>
         </label>
-        <button class="btn-ghost btn-sm" id="loadExample" type="button">Wstaw przykład</button>
-        <button class="btn-ghost btn-sm" id="clearAll" type="button">Wyczyść</button>
+        <button class="btn-ghost btn-sm" id="loadExample" type="button">Wstaw przykĹ‚ad</button>
+        <button class="btn-ghost btn-sm" id="clearAll" type="button">WyczyĹ›Ä‡</button>
       </div>
       <div class="row">
-        <label class="opt"><input type="checkbox" id="optSetCollector" checked> dołącz set i numer kolekcjonerski</label>
-        <label class="opt"><input type="checkbox" id="optCommanderTag" checked> dodaj kategorię <code>[Commander]</code> dla commandera</label>
+        <label class="opt"><input type="checkbox" id="optSetCollector" checked> doĹ‚Ä…cz set i numer kolekcjonerski</label>
+        <label class="opt"><input type="checkbox" id="optCommanderTag" checked> dodaj kategoriÄ™ <code>[Commander]</code> dla commandera</label>
       </div>
       <div class="row">
-        <button class="btn-primary" id="convertBtn" type="button">Konwertuj →</button>
+        <button class="btn-primary" id="convertBtn" type="button">Konwertuj â†’</button>
       </div>
     </div>
 
     <div class="panel">
-      <h2>Wyjście — do wklejenia w Archidekt</h2>
-      <textarea id="output" readonly placeholder="Tu pojawi się lista gotowa do importu w Archidekt…"></textarea>
+      <h2>WyjĹ›cie â€” do wklejenia w Archidekt</h2>
+      <textarea id="output" readonly placeholder="Tu pojawi siÄ™ lista gotowa do importu w Archidektâ€¦"></textarea>
       <div class="row between">
         <div>
           <button class="btn-ghost btn-sm" id="copyBtn" type="button">Skopiuj</button>
           <button class="btn-ghost btn-sm" id="downloadBtn" type="button">Pobierz .txt</button>
-          <span class="copied" id="copiedMsg" style="display:none;">Skopiowano ✓</span>
+          <span class="copied" id="copiedMsg" style="display:none;">Skopiowano âś“</span>
         </div>
       </div>
       <div class="stats" id="stats"></div>
@@ -558,13 +57,13 @@ Maybeboard
   </div>
 
   <div class="panel">
-    <h2>Podgląd rozpoznanych kart</h2>
+    <h2>PodglÄ…d rozpoznanych kart</h2>
     <div class="tbl-wrap">
       <table>
         <thead>
-          <tr><th>Ilość</th><th>Karta</th><th>Set</th><th>Nr</th><th>Foil</th><th>Sekcja</th><th>Tagi → kategorie</th></tr>
+          <tr><th>IloĹ›Ä‡</th><th>Karta</th><th>Set</th><th>Nr</th><th>Foil</th><th>Sekcja</th><th>Tagi â†’ kategorie</th></tr>
         </thead>
-        <tbody id="previewBody"><tr><td colspan="7" class="dim">Brak danych — wklej listę i kliknij „Konwertuj”.</td></tr></tbody>
+        <tbody id="previewBody"><tr><td colspan="7" class="dim">Brak danych â€” wklej listÄ™ i kliknij â€žKonwertujâ€ť.</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -572,18 +71,18 @@ Maybeboard
 
 <footer class="container">
   <div class="panel">
-    <h3>Jak tego użyć</h3>
+    <h3>Jak tego uĹĽyÄ‡</h3>
     <ol>
-      <li>W Moxfieldzie otwórz talię → <b>Bulk Edit</b> (lub Export) i skopiuj listę z włączonymi tagami — linie wyglądają jak <code>1 Sol Ring (cmm) 396 #!Ramp</code>.</li>
-      <li>Wklej to po lewej, kliknij <b>Konwertuj</b>, sprawdź podgląd kart poniżej.</li>
-      <li>Skopiuj wynik (prawa strona) i wklej w Archidekt: <b>Import</b> → wklej tekst → Import.</li>
+      <li>W Moxfieldzie otwĂłrz taliÄ™ â†’ <b>Bulk Edit</b> (lub Export) i skopiuj listÄ™ z wĹ‚Ä…czonymi tagami â€” linie wyglÄ…dajÄ… jak <code>1 Sol Ring (cmm) 396 #!Ramp</code>.</li>
+      <li>Wklej to po lewej, kliknij <b>Konwertuj</b>, sprawdĹş podglÄ…d kart poniĹĽej.</li>
+      <li>Skopiuj wynik (prawa strona) i wklej w Archidekt: <b>Import</b> â†’ wklej tekst â†’ Import.</li>
     </ol>
     <h3>Uwagi</h3>
     <ul>
-      <li>Tagi lokalne (<code>#tag</code>) i globalne (<code>#!tag</code>) z Moxfielda są łączone w jedną listę kategorii Archidekta — Archidekt nie rozróżnia tych dwóch typów.</li>
-      <li><b>Foil</b> nie jest automatycznie zapisywany w tekście wyjściowym — karty oznaczone foilem są widoczne w podglądzie.</li>
-      <li>Sekcje <code>Sideboard</code> / <code>Maybeboard</code> z Moxfielda są wykrywane i widoczne w podglądzie, ale nie są automatycznie kodowane w eksporcie.</li>
-      <li>Wszystko działa offline, w samej przeglądarce — można zapisać ten plik i otwierać lokalnie.</li>
+      <li>Tagi lokalne (<code>#tag</code>) i globalne (<code>#!tag</code>) z Moxfielda sÄ… Ĺ‚Ä…czone w jednÄ… listÄ™ kategorii Archidekta â€” Archidekt nie rozrĂłĹĽnia tych dwĂłch typĂłw.</li>
+      <li><b>Foil</b> nie jest automatycznie zapisywany w tekĹ›cie wyjĹ›ciowym â€” karty oznaczone foilem sÄ… widoczne w podglÄ…dzie.</li>
+      <li>Sekcje <code>Sideboard</code> / <code>Maybeboard</code> z Moxfielda sÄ… wykrywane i widoczne w podglÄ…dzie, ale nie sÄ… automatycznie kodowane w eksporcie.</li>
+      <li>Wszystko dziaĹ‚a offline, w samej przeglÄ…darce â€” moĹĽna zapisaÄ‡ ten plik i otwieraÄ‡ lokalnie.</li>
     </ul>
   </div>
 </footer>
@@ -694,7 +193,7 @@ Maybeboard
         name = cardPart.slice(0, setMatch.index).trim();
         const after = cardPart.slice(setMatch.index + setMatch[0].length).trim();
         if (after){
-          const collMatch = after.match(/^([A-Za-z0-9★]+)/);
+          const collMatch = after.match(/^([A-Za-z0-9â…]+)/);
           if (collMatch) collector = collMatch[1];
         }
       }
@@ -726,7 +225,7 @@ Maybeboard
     const collectorIdx = idx('collector number','collector_number');
 
     if (nameIdx === -1){
-      warnings.push('Nie znaleziono kolumny "Name" w CSV — sprawdź nagłówek pliku.');
+      warnings.push('Nie znaleziono kolumny "Name" w CSV â€” sprawdĹş nagĹ‚Ăłwek pliku.');
       return { cards, warnings };
     }
 
@@ -789,7 +288,7 @@ Maybeboard
       outputEl.value = '';
       statsEl.innerHTML = '';
       warnBox.style.display = 'none';
-      previewBody.innerHTML = '<tr><td colspan="7" class="dim">Brak danych — wklej listę i kliknij „Konwertuj”.</td></tr>';
+      previewBody.innerHTML = '<tr><td colspan="7" class="dim">Brak danych â€” wklej listÄ™ i kliknij â€žKonwertujâ€ť.</td></tr>';
       return;
     }
 
@@ -808,22 +307,22 @@ Maybeboard
     const totalCards = cards.reduce((s, c) => s + c.qty, 0);
     const allTags = dedupe(cards.flatMap(c => c.tags.map(t => sanitizeCategory(t.name))).filter(Boolean));
     statsEl.innerHTML =
-      'Rozpoznane wpisy: <b>' + cards.length + '</b> &nbsp;·&nbsp; ' +
-      'Suma kart: <b>' + totalCards + '</b> &nbsp;·&nbsp; ' +
+      'Rozpoznane wpisy: <b>' + cards.length + '</b> &nbsp;Â·&nbsp; ' +
+      'Suma kart: <b>' + totalCards + '</b> &nbsp;Â·&nbsp; ' +
       'Unikalne tagi: <b>' + allTags.length + '</b>' +
-      (warnings.length ? ' &nbsp;·&nbsp; Pominięte linie: <b>' + warnings.length + '</b>' : '');
+      (warnings.length ? ' &nbsp;Â·&nbsp; PominiÄ™te linie: <b>' + warnings.length + '</b>' : '');
 
     if (warnings.length){
       warnBox.style.display = 'block';
-      warnBox.innerHTML = 'Pominięto ' + warnings.length + ' linii (nagłówki lub nierozpoznany format):<ul>' +
+      warnBox.innerHTML = 'PominiÄ™to ' + warnings.length + ' linii (nagĹ‚Ăłwki lub nierozpoznany format):<ul>' +
         warnings.slice(0, 8).map(w => '<li>' + escapeHtml(w) + '</li>').join('') +
-        (warnings.length > 8 ? '<li>…</li>' : '') + '</ul>';
+        (warnings.length > 8 ? '<li>â€¦</li>' : '') + '</ul>';
     } else {
       warnBox.style.display = 'none';
     }
 
     if (!cards.length){
-      previewBody.innerHTML = '<tr><td colspan="7" class="dim">Nie rozpoznano żadnych kart. Sprawdź format wejściowy.</td></tr>';
+      previewBody.innerHTML = '<tr><td colspan="7" class="dim">Nie rozpoznano ĹĽadnych kart. SprawdĹş format wejĹ›ciowy.</td></tr>';
     } else {
       previewBody.innerHTML = cards.map(c => {
         const tagChips = c.tags.map(t => '<span class="chip">' + escapeHtml(sanitizeCategory(t.name)) + '</span>').join('');
@@ -831,11 +330,11 @@ Maybeboard
         return '<tr>' +
           '<td class="mono center">' + c.qty + '</td>' +
           '<td>' + escapeHtml(c.name) + '</td>' +
-          '<td class="mono">' + (c.set ? c.set : '<span class="dim">—</span>') + '</td>' +
-          '<td class="mono">' + (c.collector ? c.collector : '<span class="dim">—</span>') + '</td>' +
-          '<td class="center">' + (c.foil ? '<span class="yes">✓</span>' : '<span class="dim">—</span>') + '</td>' +
+          '<td class="mono">' + (c.set ? c.set : '<span class="dim">â€”</span>') + '</td>' +
+          '<td class="mono">' + (c.collector ? c.collector : '<span class="dim">â€”</span>') + '</td>' +
+          '<td class="center">' + (c.foil ? '<span class="yes">âś“</span>' : '<span class="dim">â€”</span>') + '</td>' +
           '<td class="dim">' + c.section + '</td>' +
-          '<td>' + (tagChips || cmdChip ? (tagChips + cmdChip) : '<span class="dim">—</span>') + '</td>' +
+          '<td>' + (tagChips || cmdChip ? (tagChips + cmdChip) : '<span class="dim">â€”</span>') + '</td>' +
           '</tr>';
       }).join('');
     }
@@ -891,4 +390,5 @@ Maybeboard
 </script>
 </body>
 </html>
->>>>>>> e484495450ad86f12faba68946c247795450a55c
+
+

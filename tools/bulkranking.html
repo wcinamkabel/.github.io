@@ -7,7 +7,7 @@
 <link rel="icon" href="../assets/wicinamobrys.ico" type="image/x-icon">
 <link rel="stylesheet" href="../assets/styles.css">
 <style>
-  </head>
+</head>
   
 <body>
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -45,7 +45,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-const { useState, useCallback, useRef } = React;
+  const { useState, useCallback, useRef } = React;
 const BATCH = 75;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -62,6 +62,15 @@ const MANA = {
   B:{ bg:"#D3D1C7", color:"#2C2C2A" },
   R:{ bg:"#FAECE7", color:"#4A1B0C" },
   G:{ bg:"#EAF3DE", color:"#173404" },
+};
+
+const RARITY = {
+  common:   { bg:"#1A1A1A", color:"#FFFFFF", label:"C" },
+  uncommon: { bg:"#718191", color:"#FFFFFF", label:"U" },
+  rare:     { bg:"#C4A154", color:"#1A1A1A", label:"R" },
+  mythic:   { bg:"#D34836", color:"#FFFFFF", label:"M" },
+  special:  { bg:"#8B008B", color:"#FFFFFF", label:"S" },
+  bonus:    { bg:"#FF8C00", color:"#FFFFFF", label:"B" }
 };
 
 function detectCols(headers) {
@@ -86,6 +95,20 @@ function Pill({ rank }) {
       fontFamily:"var(--font-mono)", fontSize:"12px", fontWeight:"500", whiteSpace:"nowrap",
     }
   }, "#" + rank.toLocaleString("pl-PL"));
+}
+
+function RarityBadge({ rarity }) {
+  const r = RARITY[rarity];
+  if (!r) return React.createElement("span", { style:{ color:"var(--color-text-secondary)", fontSize:"12px" } }, "—");
+  return React.createElement("span", {
+    title: rarity.charAt(0).toUpperCase() + rarity.slice(1),
+    style:{
+      display:"inline-flex", alignItems:"center", justifyContent:"center",
+      width:"22px", height:"22px", borderRadius:"4px",
+      background:r.bg, color:r.color, fontSize:"11px", fontWeight:"bold",
+      fontFamily:"var(--font-mono)", cursor:"help"
+    }
+  }, r.label);
 }
 
 function ColorDots({ colors }) {
@@ -161,6 +184,7 @@ function App() {
         edhrec_rank: sf?.edhrec_rank ?? null,
         type_line: sf?.type_line ?? "",
         colors: sf?.color_identity ?? [],
+        rarity: sf?.rarity ?? null,
         url: sf?.scryfall_uri ?? "https://scryfall.com/search?q="+encodeURIComponent(name),
       };
     }));
@@ -187,7 +211,7 @@ function App() {
     });
 
   function exportCSV() {
-    const rows=["EDHREC Rank,Nazwa,Ilość,Typ",...sorted.map(c=>`${c.edhrec_rank??"brak"},"${c.name}",${c.count},"${c.type_line}"`)].join("\n");
+    const rows=["EDHREC Rank,Nazwa,Ilość,Rzadkość,Typ",...sorted.map(c=>`${c.edhrec_rank??"brak"},"${c.name}",${c.count},${c.rarity??"brak"},"${c.type_line}"`)].join("\n");
     const a=Object.assign(document.createElement("a"),{
       href:URL.createObjectURL(new Blob([rows],{type:"text/csv"})),
       download:"kolekcja_edhrec.csv"
@@ -304,6 +328,7 @@ function App() {
           React.createElement("col",{ style:{ width:"130px" }}),
           React.createElement("col",{}),
           React.createElement("col",{ style:{ width:"55px" }}),
+          React.createElement("col",{ style:{ width:"60px" }}),
           React.createElement("col",{ style:{ width:"160px" }}),
           React.createElement("col",{ style:{ width:"72px" }})
         ),
@@ -313,6 +338,7 @@ function App() {
               { key:"edhrec_rank", label:"EDHREC rank" },
               { key:"name",        label:"Card Name" },
               { key:"count",       label:"Count" },
+              { key:"rarity",      label:"Rarity", nosort:true },
               { key:"type_line",   label:"Type", nosort:true },
               { key:"colors",      label:"Colors", nosort:true },
             ].map(col=>React.createElement("th",{
@@ -325,7 +351,7 @@ function App() {
         ),
         React.createElement("tbody",{},
           sorted.length===0 && React.createElement("tr",{},
-            React.createElement("td",{ colSpan:5,style:{ padding:"24px",textAlign:"center",color:"var(--color-text-secondary)",fontSize:"13px" }},
+            React.createElement("td",{ colSpan:6,style:{ padding:"24px",textAlign:"center",color:"var(--color-text-secondary)",fontSize:"13px" }},
               "No cards match the filter"
             )
           ),
@@ -346,6 +372,7 @@ function App() {
               React.createElement("i",{ className:"ti ti-external-link","aria-hidden":"true",style:{ fontSize:"10px",opacity:0.35 }})
             ),
             React.createElement("td",{ style:{ padding:"9px 12px",color:"var(--color-text-secondary)",fontFamily:"var(--font-mono)",fontSize:"12px",textAlign:"center" }}, "×"+card.count),
+            React.createElement("td",{ style:{ padding:"9px 12px",textAlign:"center" }}, React.createElement(RarityBadge,{ rarity:card.rarity })),
             React.createElement("td",{ style:{ padding:"9px 12px",color:"var(--color-text-secondary)",fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}, card.type_line||"—"),
             React.createElement("td",{ style:{ padding:"9px 12px" }}, React.createElement(ColorDots,{ colors:card.colors }))
           ))
@@ -370,5 +397,7 @@ setTimeout(() => {
   });
 }, 100);
 </script>
+<script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
+<script src="..\assets\scroll.js"></script>
 </body>
 </html>

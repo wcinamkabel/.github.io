@@ -36,25 +36,35 @@
     box-sizing: border-box;
 }
 html {
-    scroll-behavior: smooth;
-}
-html,
-body {
-    height: 100%;
-    margin: 0;
-    font-family: var(--sans);
-    background: radial-gradient(circle at top right, rgba(72, 192, 255, 0.14), transparent 16%),
+    scroll-behavior: auto !important; /* Zmienione ze smooth na auto - teraz Lenis ma pełną kontrolę */
+    overscroll-behavior-y: auto !important; /* Wymusza aktywację fizyki gumki */
+    background-color: #071327; 
+    background-image: 
+        radial-gradient(circle at top right, rgba(72, 192, 255, 0.14), transparent 16%),
         radial-gradient(circle at bottom left, rgba(111, 227, 193, 0.08), transparent 20%),
         linear-gradient(180deg, var(--bg) 0%, #021324 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+body {
+    min-height: 100vh;
+    height: auto;
+    margin: 0;
+    font-family: var(--sans);
     color: var(--text);
     display: flex;
     flex-direction: column;
+    background: transparent; 
     transition:
         background-color 0.35s ease,
         color 0.35s ease;
 }
-body {
-    min-height: 100vh;
+body::after {
+  content: "";
+  display: block;
+  height: 60px; /* Przestrzeń, w którą "wjedzie" elastyczny scroll */
+  pointer-events: none;
 }
 * {
     transition:
@@ -374,6 +384,9 @@ main.wrap {
     padding: 24px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
     margin: auto; /* Automatycznie wyśrodkuje panel w pionie i poziomie wewnątrz main */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 @media (max-width: 480px) {
     .panel {
@@ -392,9 +405,17 @@ main.wrap {
 .columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    justify-items: stretch;
     gap: 18px;
-    align-items: start;
+    width: 100%;
     margin-bottom: 18px;
+}
+.columns > * {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
 }
 @media (max-width: 880px) {
     .columns {
@@ -405,7 +426,7 @@ main.wrap {
     .columns {
         gap: 12px;
     }
-    textarea {
+    textarea, .panel textarea {
         height: 300px;
     }
 }
@@ -472,7 +493,7 @@ main.wrap {
     font-weight: 500;
 }
 /* Formularze i kontrolki wejściowe */
-textarea {
+textarea, .panel textarea {
     width: 100%;
     height: 380px;
     resize: vertical;
@@ -486,6 +507,7 @@ textarea {
     line-height: 1.7;
     outline: none;
     box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    flex: none; /* Blokuje automatyczne kurczenie się pola */
 }
 textarea:focus {
     box-shadow: 0 0 0 4px rgba(72, 192, 255, 0.12);
@@ -503,6 +525,10 @@ textarea[readonly] {
 }
 .row.between {
     justify-content: space-between;
+}
+.panel .row:last-child {
+    margin-top: auto;
+    padding-top: 14px;
 }
 /* Etykiety, przyciski i wybory */
 label.opt {
@@ -700,57 +726,4 @@ a {
 main.wrap.container > * {
     margin-top: auto !important;
     margin-bottom: auto !important;
-}
-html {
-    background-color: #071327 !important; /* Barwi strefę odskoku (overscroll) na ciemny kolor */
-    background-image: 
-        radial-gradient(circle at top right, rgba(72,192,255,0.14), transparent 16%),
-        radial-gradient(circle at bottom left, rgba(111,227,193,0.08), transparent 20%),
-        linear-gradient(180deg, var(--bg) 0%, #021324 100%) !important;
-    background-attachment: fixed !important;
-    min-height: 100vh !important;
-}
-
-body {
-    min-height: 100vh !important;
-    height: auto !important;
-    margin: 0;
-    background: transparent !important; /* Sprawia, że ciemne tło z html prześwituje pod spodem */
-}
-/* 1. Wymuszenie idealnego podziału 50/50 w poziomie i równej wysokości kolumn */
-.columns {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    align-items: stretch !important;
-    justify-items: stretch !important;
-    gap: 18px !important;
-    width: 100% !important;
-}
-
-/* 2. Gwarancja, że oba kontenery zajmą 100% wyznaczonej dla nich przestrzeni */
-.columns > * {
-    width: 100% !important;
-    max-width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-/* 3. Naprawa zapadniętych pól tekstowych - przywrócenie stabilnej wysokości */
-.panel textarea {
-    height: 380px !important; 
-    width: 100% !important;
-    flex: none !important; /* Blokuje automatyczne kurczenie się pola */
-}
-
-/* 4. Wyrównanie wysokości samych paneli */
-.panel {
-    display: flex !important;
-    flex-direction: column !important;
-    height: 100% !important;
-}
-
-/* 5. Wyrównanie dolnych przycisków obu paneli w jednej linii */
-.panel .row:last-child {
-    margin-top: auto !important;
-    padding-top: 14px !important;
 }

@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>bulkranking :3</title>
+<meta name="description" content="Load CSV file of your Magic: The Gathering collection, fetch popularity rankings from EDHREC, and sort your cards by popularity." />
+<link rel="icon" href="../assets/wicinamobrys.ico" type="image/x-icon">
+<link rel="stylesheet" href="../assets/styles.css">
+<style>
+  .upload-btn {
+    display: inline-flex !important; /* Wymusza układanie w linii */
+    align-items: center !important;  /* Centrowanie w pionie */
+    justify-content: center !important; /* TO JEST KLUCZOWE: Wymusza centrowanie w poziomie */
+    text-align: center !important;   /* Dodatkowe zabezpieczenie dla tekstu */
+    gap: 6px;
+    padding: 8px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font-sans);
+    transition: background 0.2s;
+    width: auto; /* Zapobiega rozciąganiu na całą szerokość */
+    margin: 0;   /* Resetuje ewentualne marginesy */
+  }
+  
+  .upload-btn:hover {
+    background: var(--panel-2);
+    border-color: var(--accent);
+  }
+</style>
+</head>
+ 
+<body>
+<header class="site-header">
+  <div class="container">
+    <a class="home-button" href="../index.html">← Home</a>
+    <a class="logo" href="../index.html"><img src="../assets/wcinamwcinam.png" alt="wcinamkabel's tools" class="logo-img"></a>
+  </div>
+</header>
+
+<div class="wrap container">
+  <section class="hero">
+    <h2>How does it work?</h2>
+    <p>This tool started out as a way to filter the most popular cards in your collection, but has since evolved into one of the most comprehensive tool for analyzing MTG card data. </p>
+</section>
+
+  <div class="panel">
+    <div id="root" style="padding:0;font-family:var(--font-sans);"></div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="container foot-inner">
+      <a href="https://github.com/wcinamkabel/wcinamkabel.github.io">Made with ❤️ by abel</a>
+    </div>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+  const { useState, useCallback, useRef, useEffect } = React;
+  const BATCH = 75;        // hard limit Scryfall /cards/collection
+  const CONCURRENCY = 2;   // ile partii pobieramy równolegle
+  const STAGGER = 150;     // ms odstępu między requestami w jednym "workerze"
+  const MAX_RETRIES = 3;   // ile razy próbować ponownie nieudaną partię przed poddaniem się
+  const PAGE_SIZE = 100;   // ile wierszy renderujemy na raz (wydajność przy dużych kolekcjach)
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  async function fetchOneBatch(batch) {
+    let lastErr;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const r = await fetch("https://api.scryfall.com/cards/collection", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifiers: batch.map(c => ({ name: c.name })) })
+        });
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return await r.json();
+      } catch (e) {
+        lastErr = e;
+        if (attempt < MAX_RETRIES) await sleep(400 * (attempt + 1)); // backoff
+      }
+    }
+    throw lastErr;
+  }
+
+  // Pobiera dane dla całej listy kart z ograniczoną równoległością i retry na partię.
+  // Nie przerywa całego procesu przy pojedynczym błędzie - zwraca też listę kart,
+  // których nie udało się pobrać (do ew. retry).
+  async function resolveCards(cardList, onProgress) {
+    const batches = [];
+    for (let i = 0; i < cardList.length; i += BATCH) batches.push(cardList.slice(i, i + BATCH));
+    const sfMap = new Map();
+    const failedBatches = [];
+    let nextIdx = 0, done = 0;
+
+    async function worker() {
+      while (true) {
+        const myIdx = nextIdx++;
+        if (myIdx >= batches.length) return;
+        const batch = batches[myIdx];
+        try {
+          const d = await fetchOneBatch(batch);
+          (d.data || []).forEach(c => sfMap.set(c.name.toLowerCase(), c));
+        } catch (e) {
+          failedBatches.push(batch);
+        }
+        done += batch.length;
+        onProgress(Math.min(done, cardList.length), cardList.length, failedBatches.length);
+        await sleep(STAGGER);
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, Math.max(batches.length, 1)) }, worker));
+    return { sfMap, failedCards: failedBatches.flat() };
+  }
+
+  function buildCardResult(name, count, sf) {
+    const priceEur = sf?.prices?.eur ? parseFloat(sf.prices.eur) : (sf?.prices?.eur_foil ? parseFloat(sf.prices.eur_foil) : null);
+    return {
+      name, count,
+      edhrec_rank: sf?.edhrec_rank ?? null,
+      type_line: sf?.type_line ?? "",
+      colors: sf?.color_identity ?? [],
+      rarity: sf?.rarity ?? null,
+      trend_price: priceEur,
+      url: sf?.scryfall_uri ?? "https://scryfall.com/search?q=" + encodeURIComponent(name),
+    };
+  }
+
+  const TIERS = [
+    { max:200,    label:"Staple",   range:"#1–200",       bg:"rgba(72, 192, 255, 0.1)",  text:"var(--accent)" },
+    { max:1000,   label:"Popular",  range:"#201–1 000",   bg:"rgba(111, 227, 193, 0.1)", text:"var(--success)" },
+    { max:5000,   label:"Moderate", range:"#1 001–5 000", bg:"var(--panel-2)",            text:"var(--text-dim)" },
+    { max:1/0,    label:"Niche",    range:"#5 001+",      bg:"var(--panel)",            text:"var(--muted)" },
+  ];
+
+  const MANA = {
+    W:{ bg:"rgba(250, 238, 218, 0.15)", color:"var(--text)" },
+    U:{ bg:"rgba(72, 192, 255, 0.15)",  color:"var(--accent)" },
+    B:{ bg:"rgba(255, 255, 255, 0.1)",  color:"var(--text-dim)" },
+    R:{ bg:"rgba(255, 123, 123, 0.15)", color:"var(--danger)" },
+    G:{ bg:"rgba(111, 227, 193, 0.15)", color:"var(--success)" },
+  };
+
+  const RARITY = {
+    common:   { bg:"var(--panel-2)", color:"var(--text-dim)", label:"C" },
+    uncommon: { bg:"rgba(159, 180, 214, 0.2)", color:"var(--text)", label:"U" },
+    rare:     { bg:"rgba(212, 175, 55, 0.2)", color:"#d4af37", label:"R" },
+    mythic:   { bg:"rgba(255, 123, 123, 0.2)", color:"var(--danger)", label:"M" },
+    special:  { bg:"rgba(72, 192, 255, 0.2)", color:"var(--accent)", label:"S" },
+    bonus:    { bg:"rgba(111, 227, 193, 0.2)", color:"var(--success)", label:"B" }
+  };
+
+  const COLUMNS_CONFIG = [
+    { key: "edhrec_rank", label: "EDHREC Rank", width: "130px" },
+    { key: "name",        label: "Card Name",   width: "auto" },
+    { key: "count",       label: "Count",       width: "65px" },
+    { key: "trend_price", label: "Price (€)",   width: "95px" },
+    { key: "rarity",      label: "Rarity",      width: "70px" },
+    { key: "type_line",   label: "Type",        width: "160px" },
+    { key: "colors",      label: "Colors",      width: "80px" },
+  ];
+
+  function detectCols(headers) {
+    const lo = headers.map(h => String(h).toLowerCase().trim());
+    const nIdx = lo.findIndex(h => ["name","card name","card_name","cardname","title","nazwa"].includes(h));
+    const cIdx = lo.findIndex(h => ["count","qty","quantity","amount","copies","ilość","ilosc","liczba"].includes(h));
+    return { nameCol: nIdx>=0 ? headers[nIdx] : headers[0], countCol: cIdx>=0 ? headers[cIdx] : null };
+  }
+
+  function getTier(rank) {
+    if (rank===null||rank===undefined) return null;
+    return TIERS.find(t => rank<=t.max) || TIERS[3];
+  }
+
+  function Pill({ rank }) {
+    const t = getTier(rank);
+    if (!t) return React.createElement("span", { style:{ color:"var(--text-dim)", fontSize:"12px" } }, "—");
+    return React.createElement("span", {
+      style:{
+        display:"inline-block", background:t.bg, color:t.text,
+        padding:"2px 8px", borderRadius:"999px", fontFamily:"var(--mono)", fontSize:"12px", fontWeight:"500", whiteSpace:"nowrap",
+      }
+    }, "#" + rank.toLocaleString("pl-PL"));
+  }
+
+  function RarityBadge({ rarity }) {
+    const r = RARITY[rarity];
+    if (!r) return React.createElement("span", { style:{ color:"var(--text-dim)", fontSize:"12px" } }, "—");
+    return React.createElement("span", {
+      title: rarity.charAt(0).toUpperCase() + rarity.slice(1),
+      style:{
+        display:"inline-flex", alignItems:"center", justifyContent:"center",
+        width:"22px", height:"22px", borderRadius:"4px",
+        background:r.bg, color:r.color, fontSize:"11px", fontWeight:"bold", fontFamily:"var(--mono)", cursor:"help"
+      }
+    }, r.label);
+  }
+
+  function PriceBadge({ price }) {
+    if (price === null || price === undefined) return React.createElement("span", { style:{ color:"var(--text-dim)", fontSize:"12px" } }, "—");
+    return React.createElement("span", {
+      style:{ fontFamily:"var(--mono)", fontSize:"12px", fontWeight:"500", color:"var(--success)", whiteSpace:"nowrap" }
+    }, price.toLocaleString("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €");
+  }
+
+  function ColorDots({ colors }) {
+    if (!colors.length) return React.createElement("span", { style:{ color:"var(--text-dim)", fontSize:"13px" } }, "◇");
+    return React.createElement("div", { style:{ display:"flex", gap:"3px", flexWrap:"wrap" } },
+      colors.map(c => {
+        const m = MANA[c] || { bg:"rgba(255,255,255,0.1)", color:"var(--text-dim)" };
+        return React.createElement("span", { key:c, style:{
+          display:"inline-flex", alignItems:"center", justifyContent:"center",
+          width:"18px", height:"18px", borderRadius:"50%", background:m.bg, color:m.color, fontSize:"9px", fontWeight:"500",
+        }}, c);
+      })
+    );
+  }
+
+  function App() {
+    const [phase, setPhase] = useState("upload");
+    const [prog, setProg] = useState({ done:0, total:0 });
+    const [results, setResults] = useState([]);
+    const [errMsg, setErrMsg] = useState("");
+    const [sortField, setSortField] = useState("edhrec_rank");
+    const [sortDir, setSortDir] = useState("asc");
+    const [filter, setFilter] = useState("");
+    const [drag, setDrag] = useState(false);
+    const [failedCards, setFailedCards] = useState([]);
+    const [retrying, setRetrying] = useState(false);
+    const [page, setPage] = useState(1);
+    
+    const [cols, setCols] = useState({
+      edhrec_rank: true, name: true, count: true, trend_price: true, rarity: true, type_line: true, colors: true,
+    });
+
+    const fileRef = useRef();
+
+    useEffect(() => { setPage(1); }, [filter, sortField, sortDir, results]);
+
+    const processFile = useCallback(file => {
+      if (!file) return;
+      if (!file.name.endsWith(".csv") && file.type!=="text/csv") {
+        setErrMsg("Choose a .csv file"); setPhase("error"); return;
+      }
+      Papa.parse(file, {
+        header:true, skipEmptyLines:true, worker:true,
+        complete: async ({ data }) => {
+          if (!data.length) { setErrMsg("The CSV file is empty."); setPhase("error"); return; }
+          const hdrs = Object.keys(data[0]);
+          const { nameCol, countCol } = detectCols(hdrs);
+          const map = new Map();
+          data.forEach(row => {
+            const name = row[nameCol]?.trim(); if (!name) return;
+            const cnt = countCol ? (parseInt(row[countCol])||1) : 1;
+            map.has(name) ? (map.get(name).count+=cnt) : map.set(name, { name, count:cnt });
+          });
+          await fetchRanks(Array.from(map.values()));
+        },
+        error: e => { setErrMsg("Error parsing CSV: "+e.message); setPhase("error"); }
+      });
+    }, []);
+
+    async function fetchRanks(cardList) {
+      setPhase("loading"); setProg({ done:0, total:cardList.length, failed:0 });
+      const { sfMap, failedCards: failed } = await resolveCards(
+        cardList,
+        (done, total, failedCount) => setProg({ done, total, failed: failedCount })
+      );
+      setResults(cardList.map(({ name, count }) => buildCardResult(name, count, sfMap.get(name.toLowerCase()))));
+      setFailedCards(failed);
+      setPhase("done");
+    }
+
+    async function retryFailed() {
+      if (!failedCards.length || retrying) return;
+      setRetrying(true);
+      const toRetry = failedCards;
+      const { sfMap, failedCards: stillFailed } = await resolveCards(toRetry, () => {});
+      if (sfMap.size) {
+        setResults(prev => prev.map(c =>
+          sfMap.has(c.name.toLowerCase()) ? buildCardResult(c.name, c.count, sfMap.get(c.name.toLowerCase())) : c
+        ));
+      }
+      setFailedCards(stillFailed);
+      setRetrying(false);
+    }
+
+    function handleSort(f) {
+      if (f===sortField) setSortDir(d => d==="asc"?"desc":"asc");
+      else { setSortField(f); setSortDir("asc"); }
+    }
+
+    const withRank = results.filter(c => c.edhrec_rank!==null);
+    const avgRank = withRank.length ? Math.round(withRank.reduce((s,c)=>s+c.edhrec_rank,0)/withRank.length) : 0;
+    const top500 = withRank.filter(c => c.edhrec_rank<=500).length;
+    const totalCollectionValue = results.reduce((sum, c) => sum + (c.trend_price ? c.trend_price * c.count : 0), 0);
+
+    const sorted = [...results]
+      .filter(c => !filter || c.name.toLowerCase().includes(filter.toLowerCase()))
+      .sort((a,b) => {
+        let res = 0;
+        if (sortField === "name") {
+          res = a.name.localeCompare(b.name, "pl");
+        } else if (sortField === "count") {
+          res = a.count - b.count;
+        } else if (sortField === "trend_price") {
+          const pa = a.trend_price !== null ? a.trend_price : (sortDir==="asc" ? Infinity : -Infinity);
+          const pb = b.trend_price !== null ? b.trend_price : (sortDir==="asc" ? Infinity : -Infinity);
+          res = pa - pb;
+        } else if (sortField === "rarity") {
+          const weight = { mythic: 4, rare: 3, uncommon: 2, common: 1, special: 0, bonus: 0 };
+          const wa = weight[a.rarity] || 0;
+          const wb = weight[b.rarity] || 0;
+          res = wa - wb;
+        } else if (sortField === "type_line") {
+          res = (a.type_line||"").localeCompare(b.type_line||"", "pl");
+        } else if (sortField === "colors") {
+          res = a.colors.join("").localeCompare(b.colors.join(""), "pl");
+        } else {
+          const ra = a.edhrec_rank !== null ? a.edhrec_rank : (sortDir==="asc" ? Infinity : -Infinity);
+          const rb = b.edhrec_rank !== null ? b.edhrec_rank : (sortDir==="asc" ? Infinity : -Infinity);
+          res = ra - rb;
+        }
+        return sortDir === "asc" ? res : -res;
+      });
+
+    const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+    const pageSafe = Math.min(page, totalPages);
+    const paged = sorted.slice((pageSafe - 1) * PAGE_SIZE, pageSafe * PAGE_SIZE);
+
+    function exportCSV() {
+      const activeCols = COLUMNS_CONFIG.filter(c => cols[c.key]);
+      const headers = activeCols.map(c => `"${c.label}"`).join(",");
+      const rows = sorted.map(c => {
+        return activeCols.map(col => {
+          if (col.key === "edhrec_rank") return c.edhrec_rank ?? "brak";
+          if (col.key === "name") return `"${c.name.replace(/"/g, '""')}"`;
+          if (col.key === "count") return c.count;
+          if (col.key === "trend_price") return c.trend_price !== null ? c.trend_price : "brak";
+          if (col.key === "rarity") return `"${c.rarity ?? "brak"}"`;
+          if (col.key === "type_line") return `"${(c.type_line ?? "").replace(/"/g, '""')}"`;
+          if (col.key === "colors") return `"${c.colors.join("") || "brak"}"`;
+          return "";
+        }).join(",");
+      }).join("\n");
+      const a = Object.assign(document.createElement("a"), {
+        href: URL.createObjectURL(new Blob([headers + "\n" + rows], { type: "text/csv;charset=utf-8;" })),
+        download: "kolekcja_edhrec.csv"
+      }); 
+      a.click();
+    }
+
+    function SortIcon({ f }) {
+      if (f!==sortField) return React.createElement("i",{ className:"ti ti-arrows-sort", style:{ fontSize:"11px",opacity:0.3,marginLeft:"4px" }, "aria-hidden":"true" });
+      return React.createElement("i",{ className:`ti ti-arrow-${sortDir==="asc"?"up":"down"}`, style:{ fontSize:"11px", color:"var(--accent)",marginLeft:"4px" }, "aria-hidden":"true" });
+    }
+
+    if (phase==="upload"||phase==="error") return React.createElement("div", {
+        onClick:()=>fileRef.current?.click(),
+        onDrop:e=>{ e.preventDefault(); setDrag(false); processFile(e.dataTransfer.files[0]); },
+        onDragOver:e=>{ e.preventDefault(); setDrag(true); },
+        onDragLeave:()=>setDrag(false),
+        style:{
+          border:`0px dashed ${drag?"var(--accent)":"var(--border)"}`,
+          borderRadius:"8px",
+          padding:"48px 32px",
+          textAlign:"center", cursor:"pointer",
+          background: drag?"var(--panel-2)":"var(--panel)",
+          transition:"all 0.15s",
+        }
+      },
+        React.createElement("i",{ className:"ti ti-file-import", style:{ fontSize:"36px",color:"var(--text-dim)",display:"block",marginBottom:"12px" }, "aria-hidden":"true" }),
+        React.createElement("p",{ style:{ fontSize:"16px",fontWeight:"500",margin:"0 0 6px",color:"var(--text)" } }, "Upload CSV File"),
+        React.createElement("p",{ style:{ fontSize:"13px",color:"var(--text-dim)",margin:"0 0 20px" } }, "Supports exports from Moxfield, Archidekt, Deckbox and others"),
+
+        React.createElement("button", {
+          className: "upload-btn",
+          onClick: (e) => { e.stopPropagation(); fileRef.current?.click(); }
+        },
+          React.createElement("i", { className: "ti ti-upload", "aria-hidden": "true" }), 
+          "Choose .csv File"
+        ),
+        phase==="error" && React.createElement("p",{ style:{ color:"var(--danger)",marginTop:"14px",fontSize:"13px" } }, errMsg),
+        React.createElement("input",{ ref:fileRef, type:"file", accept:".csv", onChange:e=>processFile(e.target.files[0]), style:{ display:"none" } })
+    );
+
+    if (phase==="loading") return React.createElement("div",{ style:{ textAlign:"center",padding:"48px 0" } },
+      React.createElement("i",{ className:"ti ti-loader-2 spin", style:{ fontSize:"28px",color:"var(--text-dim)",display:"block",marginBottom:"14px" }, "aria-hidden":"true" }),
+      React.createElement("p",{ style:{ color:"var(--text-dim)",fontSize:"14px",marginBottom:"14px" } },
+        "Fetching data from Scryfall... "+prog.done+" / "+prog.total + (prog.failed ? `  (${prog.failed} batches failed)` : "")
+      ),
+      React.createElement("div",{ style:{ background:"var(--panel-2)",borderRadius:"999px",height:"6px",maxWidth:"320px",margin:"0 auto" } },
+        React.createElement("div",{ style:{
+          background:"var(--accent)", height:"6px", borderRadius:"999px",
+          width:(prog.total ? Math.round((prog.done/prog.total)*100) : 0)+"%",
+          transition:"width 0.3s ease",
+        }})
+      )
+    );
+
+    return React.createElement("div",{},
+      failedCards.length>0 && React.createElement("div",{ style:{
+          display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap",
+          background:"rgba(255, 123, 123, 0.08)", border:"1px solid var(--danger)",
+          borderRadius:"8px", padding:"10px 14px", marginBottom:"14px", fontSize:"13px", color:"var(--text)"
+        }},
+        React.createElement("i",{ className:"ti ti-alert-triangle", style:{ color:"var(--danger)" }, "aria-hidden":"true" }),
+        React.createElement("span",{}, `Couldn't fetch data for ${failedCards.length} cards (network/API error). Their results may be incomplete.`),
+        React.createElement("button",{
+          className:"upload-btn", onClick:retryFailed, disabled:retrying,
+          style:{ marginLeft:"auto" }
+        }, retrying ? "Retrying..." : `Retry (${failedCards.length})`)
+      ),
+      React.createElement("div",{ style:{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(110px,1fr))",gap:"10px",marginBottom:"16px" } },
+        [
+          { label:"Unique Cards",  val:results.length, bg:"var(--panel)", text:"var(--text)" },
+          { label:"Top 500 EDHREC", val:top500, bg:"var(--panel)", text:"var(--accent)" },
+          { label:"Total Bulk Value", val:totalCollectionValue.toLocaleString("pl-PL", {minimumFractionDigits:2, maximumFractionDigits:2})+" €", bg:"var(--panel)", text:"var(--success)" },
+          { label:"Average Rank",  val:avgRank.toLocaleString("pl-PL"), bg:"var(--panel)", text:"var(--text)" },
+          { label:"No Rank",       val:results.length-withRank.length, bg:"var(--panel)", text:"var(--text-dim)" },
+        ].map(({ label,val,bg,text })=>React.createElement("div",{
+          key:label,
+          style:{ background: bg, border: "1px solid var(--border)", borderRadius:"8px", padding:"12px 14px", }
+        },
+          React.createElement("div",{ style:{ fontSize:"20px",fontWeight:"600",color:text }}, val),
+          React.createElement("div",{ style:{ fontSize:"11px",color:"var(--text-dim)",marginTop:"3px",textTransform:"uppercase",letterSpacing:"0.05em" }}, label)
+        ))
+      ),
+      React.createElement("div",{ style:{ display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"12px",alignItems:"center" } },
+        React.createElement("span",{ style:{ fontSize:"11px",color:"var(--text-dim)",marginRight:"2px",textTransform:"uppercase",fontWeight:"600" } },"Ranks:"),
+        ...TIERS.map(t=>React.createElement("span",{
+          key:t.label,
+          style:{ fontSize:"11px",padding:"2px 9px",borderRadius:"999px",background:t.bg,color:t.text,fontWeight:"500" }
+        }, t.label+" "+t.range)),
+        React.createElement("span",{ style:{ fontSize:"11px",padding:"2px 9px",borderRadius:"999px",background:"var(--panel-2)",color:"var(--text-dim)",fontWeight:"500" } }, "No rank")
+      ),
+      React.createElement("div",{ style:{ display:"flex",gap:"6px",flexWrap:"wrap",marginBottom:"16px",alignItems:"center" } },
+        React.createElement("span",{ style:{ fontSize:"11px",color:"var(--text-dim)",marginRight:"2px",textTransform:"uppercase",fontWeight:"600" } },"Visible columns:"),
+        ...COLUMNS_CONFIG.map(col => {
+          const isVis = cols[col.key];
+          return React.createElement("span", {
+            key: col.key, onClick: () => setCols(prev => ({ ...prev, [col.key]: !prev[col.key] })),
+            style: {
+              fontSize: "11px", padding: "2px 9px", borderRadius: "999px", cursor: "pointer",
+              background: isVis ? "rgba(72, 192, 255, 0.1)" : "transparent",
+              color: isVis ? "var(--accent)" : "var(--text-dim)",
+              border: `1px solid ${isVis ? "var(--accent)" : "var(--border)"}`,
+              fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "4px", userSelect: "none"
+            }
+          }, React.createElement("i", { className: isVis ? "ti ti-check" : "ti ti-x" }), col.label);
+        })
+      ),
+      React.createElement("div",{ style:{ display:"flex",gap:"8px",flexWrap:"wrap",alignItems:"center",marginBottom:"12px" } },
+        React.createElement("div",{ style:{ position:"relative" } },
+          React.createElement("i",{ className:"ti ti-search", style:{ position:"absolute",left:"10px",top:"50%",transform:"translateY(-50%)",color:"var(--text-dim)",fontSize:"14px",pointerEvents:"none" }}),
+          React.createElement("input",{
+            value:filter, onChange:e=>setFilter(e.target.value), placeholder:"Search by name...",
+            style:{ paddingLeft:"32px",width:"200px",background:"var(--panel-2)",border:"1px solid var(--border)",color:"var(--text)",borderRadius:"4px",height:"36px" }
+          })
+        ),
+        React.createElement("span",{ style:{ fontSize:"13px",color:"var(--text-dim)" }}, sorted.length+" cards"),
+     React.createElement("button", { 
+  className: "upload-btn", // Używamy tej samej klasy co w upload
+  onClick: exportCSV, 
+  style: { 
+    marginLeft: "auto", 
+    display: "inline-flex", 
+    alignItems: "center", 
+    justifyContent: "center" 
+  } 
+},
+  React.createElement("i", { className: "ti ti-download", "aria-hidden": "true", style: { marginRight: "6px" } }), 
+  "Export CSV"
+),
+        React.createElement("button",{ className:"upload-btn", onClick:()=>{ setPhase("upload"); setResults([]); setFilter(""); } },
+          React.createElement("i",{ className:"ti ti-refresh",style:{ marginRight:"6px" }}), "New File"
+        )
+      ),
+      React.createElement("div",{ className: "tbl-wrap" },
+        React.createElement("table",{ className: "table", style:{ tableLayout:"fixed", marginTop:0 }},
+          React.createElement("colgroup",{}, COLUMNS_CONFIG.filter(c => cols[c.key]).map(c => React.createElement("col",{ key:c.key, style: c.width !== "auto" ? { width: c.width } : {} }))),
+          React.createElement("thead",{},
+            React.createElement("tr",{}, COLUMNS_CONFIG.filter(col => cols[col.key]).map(col => React.createElement("th",{
+              key: col.key, className: "th-sort", onClick: () => handleSort(col.key),
+              style: { color: sortField===col.key ? "var(--accent)" : "var(--text-dim)" }
+            }, col.label, React.createElement(SortIcon, { f: col.key }))))
+          ),
+          React.createElement("tbody",{},
+            paged.map((card,i)=>React.createElement("tr",{
+              key:card.name, className:"card-row", style:{ background: i%2===0 ? "var(--panel-2)" : "var(--panel)" }
+            },
+              cols.edhrec_rank && React.createElement("td",{ style:{ padding:"9px 8px" }}, React.createElement(Pill,{ rank:card.edhrec_rank })),
+              cols.name && React.createElement("td",{ style:{ padding:"9px 8px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }},
+                React.createElement("a",{ href:card.url, rel:"noopener", target:"_blank", style:{ color:"var(--text)",textDecoration:"none",fontWeight:"500" } }, card.name),
+                " ", React.createElement("i",{ className:"ti ti-external-link",style:{ fontSize:"10px",opacity:0.35 }})
+              ),
+              cols.count && React.createElement("td",{ className:"mono center", style:{ padding:"9px 8px",color:"var(--text-dim)" }}, "×"+card.count),
+              cols.trend_price && React.createElement("td",{ style:{ padding:"9px 8px",textAlign:"right" }}, React.createElement(PriceBadge,{ price:card.trend_price })),
+              cols.rarity && React.createElement("td",{ style:{ padding:"9px 8px",textAlign:"center" }} , React.createElement(RarityBadge,{ rarity:card.rarity })),
+              cols.type_line && React.createElement("td",{ style:{ padding:"9px 8px",color:"var(--text-dim)",fontSize:"12px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}, card.type_line||"—"),
+              cols.colors && React.createElement("td",{ style:{ padding:"9px 8px" }}, React.createElement(ColorDots,{ colors:card.colors }))
+            ))
+          )
+        )
+      ),
+      totalPages>1 && React.createElement("div",{ style:{ display:"flex",justifyContent:"center",alignItems:"center",gap:"12px",marginTop:"16px" } },
+        React.createElement("button",{ className:"upload-btn", disabled:pageSafe<=1, onClick:()=>setPage(p=>Math.max(1,p-1)) }, "← Prev"),
+        React.createElement("span",{ style:{ fontSize:"13px",color:"var(--text-dim)" } }, `Page ${pageSafe} / ${totalPages} (${sorted.length} cards)`),
+        React.createElement("button",{ className:"upload-btn", disabled:pageSafe>=totalPages, onClick:()=>setPage(p=>Math.min(totalPages,p+1)) }, "Next →")
+      )
+    );
+  }
+
+  ReactDOM.render(React.createElement(App), document.getElementById("root"));
+
+  setTimeout(() => {
+    const allButtons = document.querySelectorAll('button');
+    const homeBtn = document.querySelector('.home-button');
+    const elementsToAnimate = [...allButtons, homeBtn].filter(el => el);
+    elementsToAnimate.forEach(el => {
+      el.addEventListener('mousedown', () => el.classList.add('active'));
+      el.addEventListener('mouseup', () => el.classList.remove('active'));
+      el.addEventListener('mouseleave', () => el.classList.remove('active'));
+    });
+  }, 100);
+</script>
+</body>
+</html>

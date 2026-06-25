@@ -7,12 +7,75 @@
   <meta name="description" content="meow" />
   <link rel="icon" href="assets/wicinamobrys.ico" type="image/x-icon">
   <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    #mobile-block-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background-color: #071327;
+      background-image:
+          radial-gradient(circle at top right, rgba(72, 192, 255, 0.14), transparent 16%),
+          radial-gradient(circle at bottom left, rgba(111, 227, 193, 0.08), transparent 20%),
+          linear-gradient(180deg, #071327 0%, #021324 100%);
+      color: var(--text);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      font-family: var(--sans);
+    }
+    #mobile-block-overlay .mbo-panel {
+      background: linear-gradient(135deg, rgba(72, 192, 255, 0.22), rgba(111, 227, 193, 0.15));
+      border: 1px solid rgba(72, 192, 255, 0.28);
+      border-radius: 18px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+      padding: 36px 28px;
+      max-width: 380px;
+    }
+    #mobile-block-overlay .mbo-icon {
+      height: 56px;
+      width: 56px;
+      max-width: 56px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 18px;
+    }
+    #mobile-block-overlay h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      color: #ffffff;
+      letter-spacing: 0.3px;
+    }
+    #mobile-block-overlay p {
+      max-width: 320px;
+      line-height: 1.7;
+      color: #ffffff;
+      font-size: 14px;
+      margin: 0 auto;
+    }
+    body.is-mobile-blocked > *:not(#mobile-block-overlay) {
+      display: none !important;
+    }
+    body.is-mobile-blocked #mobile-block-overlay {
+      display: flex;
+    }
+  </style>
 </head>
 <body>
+<div id="mobile-block-overlay">
+  <div class="mbo-panel">
+    <img src="assets/wicinamobrys.ico" alt="" class="mbo-icon">
+    <h2>Mobile version unavailable</h2>
+    <p>The mobile version of this site is currently broken. Please switch to desktop or enable "Desktop site" in your browser to use the tools.</p>
+  </div>
+</div>
 <main class="wrap container">
   <section class="hero hero-main">
     <img src="assets/wcinamwcinam.png" alt="wcinamkabel's tools" class="hero-logo">
     <p>Fast, minimal tools for MTG — pick one below.</p>
+    <span id="site-version" class="chip" style="display:none; margin-top: 4px;"></span>
 
     <div class="tools-grid">
       <a href="tools/wcinamkonwerter.html" class="tool-button">
@@ -63,6 +126,6 @@
   fetchLatestRelease();
 </script>
 <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
-<script src="assets/scroll.js"></script> 
+  <script src="assets/scroll.js"></script> 
 </body>
 </html>
